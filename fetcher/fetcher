@@ -10,13 +10,19 @@ REQUIREMENTS=("requests" "pygame")
 if [ ! -d "$VENV_DIR" ]; then
   echo "🔧 Creating virtual environment..."
   python3 -m venv "$VENV_DIR" || { echo "❌ Failed to create venv"; exit 1; }
+
+  # === Activate venv ===
+  source "$VENV_DIR/bin/activate" || { echo "❌ Failed to activate venv"; exit 1; }
+
+  # === Install dependencies ===
+  pip install --quiet "${REQUIREMENTS[@]}"
+
+else 
+  # === Activate venv ===
+  source "$VENV_DIR/bin/activate" || { echo "❌ Failed to activate venv"; exit 1; }
+
 fi
 
-# === Activate venv ===
-source "$VENV_DIR/bin/activate" || { echo "❌ Failed to activate venv"; exit 1; }
-
-# === Install dependencies ===
-pip install --quiet "${REQUIREMENTS[@]}"
 
 # === Run the script ===
 python "$SCRIPT_NAME" "$@"
