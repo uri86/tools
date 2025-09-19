@@ -1,21 +1,33 @@
 import argparse
-import socket
 import requests
+import psutil
+import ipaddress
 
 
-def local_ip():
+def local_ips():
     """
-    Tries to get the local IP address of the computer using sockets
+    Get private and public local IPv4 addresses across all NICs.
+    Returns a dict: {"private": [(nic, ip), ...], "public": [(nic, ip), ...]}
     """
+    results = []
+
     try:
-        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        s.connect(("8.8.8.8", 80))  # Google's public DNS server
-        local_ip_address, _ = s.getsockname()
-        s.close()
-        return local_ip_address
+        addrs = psutil.net_if_addrs()
+        for nic, info in addrs.items():
+            for addr in info:
+                if addr.family.name == "AF_INET":  # IPv4 only
+                    ip = addr.address
+                    results.append((nic, ip))
     except Exception as e:
-        print(f"Error getting local IP: {e}")
-        return None
+        print(f"Error getting local IPs: {e}")
+
+    return results
+
+def print_local_ips(ips: list | tuple):
+    print("Local:")
+    for nic, ip in ips:
+        print(f"  {ip} ({nic})")
+
 
 def public_ip():
     """
@@ -29,34 +41,31 @@ def public_ip():
         print(f"Error getting public IP: {e}")
         return None
 
-def main():
-    """
-    Main function to parse command-line arguments and run the program
-    """
-    parser = argparse.ArgumentParser(description="Get information about your IP address or ping a URL.")
 
-    # Create a mutually exclusive group for public and all options
+def main():
+    parser = argparse.ArgumentParser(description="Get information about your IP addresses.")
+
     group = parser.add_mutually_exclusive_group()
     group.add_argument("--public", action="store_true", help="Shows your public IP address.")
     group.add_argument("--all", action="store_true", help="Shows both public and local IP addresses.")
 
     args = parser.parse_args()
+
     if args.public:
         pub_ip = public_ip()
         if pub_ip:
-            print(f"Public: {pub_ip}")
+            print(f"Public:\n  {pub_ip}")
+
     elif args.all:
-        loc_ip = local_ip()
+        ips = local_ips()
         pub_ip = public_ip()
-        if loc_ip:
-            print(f"Local: {loc_ip}")
+
+        print_local_ips (ips)
         if pub_ip:
-            print(f"Public: {pub_ip}")
+            print(f"Public:\n  {pub_ip}")
+
     else:
-        # If no arguments are provided, show local and public IP
-        loc_ip = local_ip()
-        if loc_ip:
-            print(f"Local: {loc_ip}")
+        print_local_ips(local_ips())
 
 
 if __name__ == "__main__":
